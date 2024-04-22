@@ -1,0 +1,16 @@
+# Made in Blockbench 4.9.4
+newmtl m_dc0589c2-dd35-c93b-efa3-ca534919d21c
+map_Kd antena.png
+newmtl m_feeb3ad6-ee03-3918-491d-4f009746b497
+map_Kd radio_body.png
+newmtl m_adf9ec80-658b-889b-786c-8cf3f7a91a7b
+map_Kd handle_top.png
+newmtl m_b8d1bf16-f418-fba0-2658-acb89b31551f
+map_Kd handle_sides.png
+newmtl m_ad8f8819-13f0-182d-70ba-f2bfeb615eea
+map_Kd channel_face.png
+newmtl m_c1995fc7-631c-1b8b-826f-6ec6839c4eed
+map_Kd dial.png
+newmtl m_7edda135-e4cf-d319-ca9d-d03515bc6d12
+map_Kd speaker.png
+newmtl none
