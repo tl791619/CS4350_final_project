@@ -1,4 +1,4 @@
-#### CS4350 Final Project ####
+# CS4350 Final Project #
 
 ## The Invisible Maze ##
 
