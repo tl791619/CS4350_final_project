@@ -39,7 +39,6 @@
 #include "WOSoundObject.h"
 #include "AftrUtilities.h"
 #include "helperFuncs.h"
-#include "NetMsgPausePxSim.h"
 
 //audio library includes 
 #include "irrKlang.h"
@@ -120,9 +119,6 @@ void GLViewInvisibleMaze::onCreate()
    }
    this->setActorChaseType( STANDARDEZNAV ); //Default is STANDARDEZNAV mode
    //this->setNumPhysicsStepsPerRender( 0 ); //pause physics engine on start up; will remain paused till set to 1
-
-   //initialize the messaging client 
-   client = NetMessengerClient::New("127.0.0.1","1132");
 
 }
 
@@ -341,6 +337,8 @@ void Aftr::GLViewInvisibleMaze::loadMap()
         float halfExt = 2.0; //size of the cube model 
         pxCube = PxCreateDynamic(*physics, t, PxBoxGeometry(halfExt, halfExt, halfExt), *genMaterial, 10.0f);
         pxScene->addActor(*pxCube);
+
+        update(pxCube, cube);
     }
 
     //load in sphere for a collision
@@ -366,12 +364,14 @@ void Aftr::GLViewInvisibleMaze::loadMap()
         PxTransform t(PxVec3(0.0f, 5.0f, 0.0f));
         pxSphere = PxCreateDynamic(*physics, t, PxSphereGeometry(3), *genMaterial, 10.0f);
         pxScene->addActor(*pxSphere); 
+
+        update(pxSphere, sphere);
     }
 
     //Render label text onto the screen with project name 
     {
         WOGUILabel* screenLabel = WOGUILabel::New(nullptr);
-        screenLabel->setText("Networked PhysX"); 
+        screenLabel->setText("Invisible Maze"); 
         screenLabel->setColor(0, 255, 200, 255);
         screenLabel->setFontSize(26);
         screenLabel->setPosition(Vector(0, 1, 0));
@@ -393,8 +393,6 @@ void Aftr::GLViewInvisibleMaze::loadMap()
            //add button interaction to play/pause physics simulation 
            ImGui::Text("Run/Pause Physics Simulation");
            if (ImGui::Button("Run/Pause")) {
-               pauseSim.pause = !runSimulation; 
-               client->sendNetMsgSynchronousTCP(pauseSim); 
                runPxSim(!runSimulation);
            }
            ImGui::Separator(); 

@@ -5,7 +5,6 @@
 #include "WOSoundObject.h"
 #include "NetMessengerClient.h"
 #include "PxPhysicsAPI.h" 
-#include "NetMsgPausePxSim.h"
 
 namespace Aftr
 {
@@ -54,10 +53,6 @@ namespace Aftr
        WOSoundObject* sphere = nullptr;
 
        bool runSimulation = false; //controls running of physics simulation, defualt to paused 
-
-       //client and server messengers 
-       NetMessengerClient* client = nullptr;
-       NetMsgPausePxSim pauseSim; 
 
        //PhysX stuff 
        physx::PxFoundation* pxFoundation = nullptr;
