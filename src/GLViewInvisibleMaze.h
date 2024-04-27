@@ -35,10 +35,7 @@ namespace Aftr
        virtual void onMouseUp(const SDL_MouseButtonEvent& e);
        virtual void onMouseMove(const SDL_MouseMotionEvent& e);
        virtual void onKeyDown(const SDL_KeyboardEvent& key);
-       virtual void onKeyUp(const SDL_KeyboardEvent& key);
-
-       //function to set physics simulation bool, default is to run the simulation
-       virtual void runPxSim(bool run = true); 
+       virtual void onKeyUp(const SDL_KeyboardEvent& key); 
 
    protected:
        GLViewInvisibleMaze(const std::vector< std::string >& args);
@@ -49,10 +46,9 @@ namespace Aftr
        float volumeScalar = 0.0;
 
        //object rendering 
-       WOSoundObject* cube = nullptr;
-       WOSoundObject* sphere = nullptr;
+       WO* avatar = nullptr; 
 
-       bool runSimulation = false; //controls running of physics simulation, defualt to paused 
+       bool pause = true; //controls running of physics simulation, defualt to paused 
 
        //PhysX stuff 
        physx::PxFoundation* pxFoundation = nullptr;
@@ -69,8 +65,7 @@ namespace Aftr
        physx::PxPvdSceneClient* pvdClient = nullptr;
 
        //PhysX actors 
-       physx::PxRigidDynamic* pxSphere = nullptr; 
-       physx::PxRigidDynamic* pxCube = nullptr;
+       physx::PxRigidDynamic* pxDog = nullptr; 
 
    };
 

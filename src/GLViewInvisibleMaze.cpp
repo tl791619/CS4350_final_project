@@ -167,13 +167,12 @@ void GLViewInvisibleMaze::updateWorld()
    }
 
    //make things move! 
-   if (runSimulation) {
+   if (!pause) {
        pxScene->simulate(0.05f);
        pxScene->fetchResults(true);
 
        //sync physx actors with WOs
-       update(pxSphere, sphere);
-       update(pxCube, cube);
+       
    }
 
 }
@@ -221,10 +220,6 @@ void GLViewInvisibleMaze::onKeyUp(const SDL_KeyboardEvent& key)
     GLView::onKeyUp(key);
 }
 
-void GLViewInvisibleMaze::runPxSim(bool run) {
-    runSimulation = run;
-}
-
 void Aftr::GLViewInvisibleMaze::loadMap()
 {
     this->worldLst = new WorldList(); //WorldList is a 'smart' vector that is used to store WO*'s
@@ -261,6 +256,8 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     std::string cubePath(ManagerEnvironmentConfiguration::getSMM() + "/models/cube4x4x4redShinyPlastic_pp.wrl");
     std::string grass(ManagerEnvironmentConfiguration::getSMM() + "/models/grassFloor400x400_pp.wrl"); 
     std::string spherePath(ManagerEnvironmentConfiguration::getLMM() + "models/SimpleSphere/simple_sphere.obj");
+    std::string wallPath(ManagerEnvironmentConfiguration::getLMM() + "models/WallSegment/wall_segment.obj");
+    std::string dogPath(ManagerEnvironmentConfiguration::getLMM() + "models/Dog/dog.obj");
 
     //Load skybox texture from Hummus.name 
     std::vector< std::string > skyBoxImageNames; //vector to store texture paths
@@ -289,7 +286,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
         worldLst->push_back(wo);
     }
 
-    ////Create the infinite grass plane (the floor)
+    //Create the infinite grass plane (the floor)
     {
         //load the grass as a aftrburner WO
         WO* wo = WO::New(grass, Vector(1, 1, 1), MESH_SHADING_TYPE::mstFLAT);
@@ -313,59 +310,49 @@ void Aftr::GLViewInvisibleMaze::loadMap()
 
     }
 
-    //load in a cube for collision 
+    //load the player avatar 
     {
-        ISound* tempSound = soundEngine->play3D(soundEffect, vec3df(0, 0, 5), false, true, true);
-        cube = WOSoundObject::New(cubePath, Vector(1,1,1), MESH_SHADING_TYPE::mstFLAT, tempSound); 
-        cube->setVolume(0.5);
-        cube->setMinDistance(10);
-        cube->setLabel("cube"); 
-        cube->setPosition(Vector(0,2,15)); 
-        cube->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
-        WO* c = cube; 
-        cube->upon_async_model_loaded([c]()
+        avatar = WO::New(dogPath, Vector(3,3,3), MESH_SHADING_TYPE::mstFLAT); 
+        avatar->setLabel("avatar");
+        avatar->setPosition(Vector(0,0,0)); 
+        
+        avatar->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE; 
+        WO* a = avatar; 
+        a->upon_async_model_loaded([a]()
             {
-                ModelMeshSkin& cubeSkin = c->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);
-                cubeSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
-                cubeSkin.setDiffuse(aftrColor4f(1.0f, 1.0f, 1.0f, 1.0f)); //Diffuse color components (ie, matte shading color of this object)
-                cubeSkin.setSpecular(aftrColor4f(1.0f, 0.4f, 0.4f, 1.0f)); //Specular color component (ie, how "shiney" it is)
-                cubeSkin.setSpecularCoefficient(300); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
-            });
-        worldLst->push_back(cube); 
+                ModelMeshSkin& avatarSkin = a->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);
+                avatarSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
+                avatarSkin.setDiffuse(aftrColor4f(0.8f, 0.8f, 0.8f, 0.5f)); //Diffuse color components (ie, matte shading color of this object)
+                avatarSkin.setSpecular(aftrColor4f(0.2f, 0.2f, 0.2f, 1.0f)); //Specular color component (ie, how "shiney" it is)
+                avatarSkin.setSpecularCoefficient(10); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
 
-        PxTransform t(PxVec3(0.0f, 15.0f, 2.0f));
-        float halfExt = 2.0; //size of the cube model 
-        pxCube = PxCreateDynamic(*physics, t, PxBoxGeometry(halfExt, halfExt, halfExt), *genMaterial, 10.0f);
-        pxScene->addActor(*pxCube);
+            }
+        );
+        worldLst->push_back(avatar);
 
-        update(pxCube, cube);
     }
 
-    //load in sphere for a collision
+    //load in a wall segment 
     {
-        ISound* tempSound = soundEngine->play3D(soundEffect, vec3df(0, 0, 5), false, true, true);
-        sphere = WOSoundObject::New(spherePath, Vector(3, 3, 3), MESH_SHADING_TYPE::mstFLAT, tempSound);
-        sphere->setVolume(0.5); 
-        sphere->setMinDistance(10); 
-        sphere->setLabel("sphere");
-        sphere->setPosition(Vector(0, 0, 5));
-        sphere->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
-        WO* s = sphere; 
-        s->upon_async_model_loaded([s]()
-            {
-                ModelMeshSkin& sphereSkin = s->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);;
-                sphereSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
-                sphereSkin.setDiffuse(aftrColor4f(1.0f, 1.0f, 1.0f, 1.0f)); //Diffuse color components (ie, matte shading color of this object)
-                sphereSkin.setSpecular(aftrColor4f(0.2f, 0.2f, 0.2f, 1.0f)); //Specular color component (ie, how "shiney" it is)
-                sphereSkin.setSpecularCoefficient(10); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
-            });
-        worldLst->push_back(sphere);
+        {
+            WO* wall = WO::New(wallPath, Vector(3, 3, 3), MESH_SHADING_TYPE::mstFLAT);
+            wall->setLabel("wall");
+            wall->setPosition(Vector(0, 0, 0));
 
-        PxTransform t(PxVec3(0.0f, 5.0f, 0.0f));
-        pxSphere = PxCreateDynamic(*physics, t, PxSphereGeometry(3), *genMaterial, 10.0f);
-        pxScene->addActor(*pxSphere); 
+            wall->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
+            wall->upon_async_model_loaded([wall]()
+                {
+                    ModelMeshSkin& wallSkin = wall->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);
+                    wallSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
+                    wallSkin.setDiffuse(aftrColor4f(0.8f, 0.8f, 0.8f, 0.5f)); //Diffuse color components (ie, matte shading color of this object)
+                    wallSkin.setSpecular(aftrColor4f(0.2f, 0.2f, 0.2f, 1.0f)); //Specular color component (ie, how "shiney" it is)
+                    wallSkin.setSpecularCoefficient(10); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
 
-        update(pxSphere, sphere);
+                }
+            );
+            worldLst->push_back(wall);
+
+        }
     }
 
     //Render label text onto the screen with project name 
@@ -392,8 +379,8 @@ void Aftr::GLViewInvisibleMaze::loadMap()
       {
            //add button interaction to play/pause physics simulation 
            ImGui::Text("Run/Pause Physics Simulation");
-           if (ImGui::Button("Run/Pause")) {
-               runPxSim(!runSimulation);
+           if (ImGui::Button("Play/Pause")) {
+               pause = !pause;
            }
            ImGui::Separator(); 
            if (ImGui::CollapsingHeader("Sound Controls")) {
