@@ -24,32 +24,28 @@ MazeCell::MazeCell(){
 string MazeCell::toString(){ 
   string cell = ""; 
   if (NorthWall){ 
-
+    cell += "N";
+  }
+  else {
+      cell += "-";
   }
   if (SouthWall){ 
-
+    cell += "S";
+  }
+  else {
+      cell += "-";
   }
   if (EastWall){ 
-
+    cell += "E";
+  }
+  else {
+      cell += "-";
   }
   if (WestWall){ 
-
+    cell += "W";
   }
-}
-
-//access functions 
-bool MazeCell::hasNorthWall() { 
-	return NorthWall; 
-}
-
-bool MazeCell::hasSouthWall() { 
-	return SouthWall; 
-}
-
-bool MazeCell::hasEastWall() { 
-	return EastWall; 
-}
-
-bool MazeCell::hasWestWall() { 
-	return WestWall; 
+  else {
+      cell += "-";
+  }
+  return cell; 
 }

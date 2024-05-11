@@ -26,10 +26,10 @@ public:
   string toString(); 
 
   //return the bools that stor what sides of the cell have a wall
-  bool hasNorthWall();
-  bool hasSouthWall();
-  bool hasEastWall();
-  bool hasWestWall();
+  bool hasNorthWall() { return NorthWall; }
+  bool hasSouthWall() { return SouthWall; }
+  bool hasEastWall() { return EastWall; }
+  bool hasWestWall() { return WestWall; }
 
 protected:
 

@@ -7,12 +7,13 @@
 */
 
 #pragma once
-#include "MazeCell.h" 
 #include <vector> 
 #include <string> 
 #include <queue> 
 
 using namespace std; 
+
+class MazeCell;
 
 enum class DIRECTION : char { 
   NORTH, 
@@ -38,7 +39,7 @@ public:
 
 protected: 
 
-  void generateMaze(int height, int width); 
+  void generateMaze(); 
   void tunnel(int row, int column, DIRECTION direction); 
   bool validCell(int row, int column); 
   void generatePath(int row, int column); 

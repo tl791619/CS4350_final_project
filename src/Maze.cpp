@@ -19,19 +19,21 @@ Maze::Maze(int mazeHeight, int mazeWidth){
   height = mazeHeight; 
   width = mazeWidth;
   
+  generateMaze(); 
 }
 
 string Maze::toString(){ 
-  
-}
+  string mString = ""; 
 
-//access the size of the maze 
-int Maze::getheight() {
-    return height; 
-}
-
-int Maze::getWidth() { 
-    return width; 
+  //add all of the maze cells to teh string  
+    for (int h = 0; h < height; h++){ 
+      for (int w = 0; w < width; w++){ 
+        mString += maze[h][w]->toString() + "   ";
+      }
+      mString += "\n"; 
+    }
+    mString += "\n";
+    return mString; 
 }
 
 //return a pointer to the cell at location row, column
@@ -83,7 +85,7 @@ Maze generation process:
 
 */
 
-void Maze::generateMaze(int height, int width){
+void Maze::generateMaze(){
 
     //resize the maze to match the given height and width  
     maze.resize(height);
@@ -118,25 +120,31 @@ void Maze::generatePath(int row, int column){
     if (unvisited.size() == 0){ 
       return; 
     }
-    unvisited.pop(); 
+    
     //mark the current cell as visited 
+    maze[row][column]->visited = true; 
 
     //define array of directions, then shuffle it. 
     vector<DIRECTION> dir = {DIRECTION::NORTH, DIRECTION::SOUTH, DIRECTION::EAST, DIRECTION::WEST};
-    int seed = 0; //seed for the random generator 
+    
+    //random shuffle the directions attempted 
+    random_device randDevice;
+    mt19937 generator(randDevice());
     int end = sizeof(dir)/sizeof(dir[0]);
-    shuffle(dir.begin(), dir.end(), default_random_engine(seed));
+    shuffle(dir.begin(), dir.end(), generator);
 
     for(int i = 0; i <=3; i++){ 
       if (dir[i] == DIRECTION::NORTH){ 
         if(validCell(row+1, column) && !maze[row+1][column]->visited){ 
+          unvisited.pop();
           tunnel(row+1, column, DIRECTION::SOUTH); 
           tunnel(row, column, DIRECTION::NORTH); 
           generatePath(row+1, column); 
         }
       }
       else if (dir[i] == DIRECTION::SOUTH){ 
-        if(validCell(row-1, column && !maze[row-1][column]->visited)){ 
+        if(validCell(row-1, column) && !maze[row-1][column]->visited){ 
+          unvisited.pop();
           tunnel(row-1, column, DIRECTION::NORTH); 
           tunnel(row, column, DIRECTION::SOUTH); 
           generatePath(row-1, column); 
@@ -144,18 +152,19 @@ void Maze::generatePath(int row, int column){
       }
       else if (dir[i] == DIRECTION::EAST){ 
         if(validCell(row, column+1) && !maze[row][column+1]->visited){ 
-          tunnel(row, column+1, DIRECTION::WEST); 
-          tunnel(row, column, DIRECTION::EAST); 
-          generatePath(row+1, column); 
+            unvisited.pop();
+            tunnel(row, column+1, DIRECTION::WEST); 
+            tunnel(row, column, DIRECTION::EAST); 
+            generatePath(row, column+1); 
         }
       }
       else{ 
         if(validCell(row, column-1) && !maze[row][column-1]->visited){ 
-          tunnel(row, column-1, DIRECTION::EAST); 
-          tunnel(row, column, DIRECTION::WEST); 
-          generatePath(row+1, column); 
+            unvisited.pop();
+            tunnel(row, column-1, DIRECTION::EAST); 
+            tunnel(row, column, DIRECTION::WEST); 
+            generatePath(row, column-1); 
         }
       }
     }
-
 }

@@ -37,8 +37,11 @@
 //added includes
 #include "WOGUILabel.h"
 #include "WOSoundObject.h"
+#include "CameraLockedRelative.h"
 #include "AftrUtilities.h"
 #include "helperFuncs.h"
+#include "Maze.h" 
+#include "MazeCell.h"
 
 //audio library includes 
 #include "irrKlang.h"
@@ -110,16 +113,23 @@ void GLViewInvisibleMaze::onCreate()
    //GLViewInvisibleMaze::onCreate() is invoked after this module's LoadMap() is completed.
    //At this point, all the managers are initialized. That is, the engine is fully initialized.
    
-   if( this->pe != NULL )
-   {
-      //optionally, change gravity direction and magnitude here
-      //The user could load these values from the module's aftr.conf
-      this->pe->setGravityNormalizedVector( Vector( 0,0,-1.0f ) );
-      this->pe->setGravityScalar( Aftr::GRAVITY );
-   }
-   this->setActorChaseType( STANDARDEZNAV ); //Default is STANDARDEZNAV mode
-   //this->setNumPhysicsStepsPerRender( 0 ); //pause physics engine on start up; will remain paused till set to 1
+   //this->setActorChaseType(STANDARDEZNAV); //Default is STANDARDEZNAV mode
+   
 
+   //set the camera chase actor type 
+   this->setActorChaseType(LOCKEDRELATIVE);
+
+   //make sure the camera follows the avatar at a set relative offset 
+   ((CameraLockedRelative*)this->getCamera())->setOffset(Vector(30, 0, 15));
+
+   this->getCamera()->setActorToWatch(avatar);
+
+   this->getCamera()->setCameraLookDirection(avatar->getPosition() * -1);
+
+   //create a camera object that follows the avatar
+        //WO* LOZCam = ...
+
+        //set hte new camera as the GLView actor 
 }
 
 
@@ -205,12 +215,18 @@ void GLViewInvisibleMaze::onMouseMove( const SDL_MouseMotionEvent& e )
 void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
 {
    GLView::onKeyDown( key );
-   if( key.keysym.sym == SDLK_0 )
-      this->setNumPhysicsStepsPerRender( 1 );
 
-   if( key.keysym.sym == SDLK_1 )
-   {
-
+   if( key.keysym.sym == SDLK_w ){
+       avatar->moveRelative(Vector(-10, 0, 0));
+   }
+   else if (key.keysym.sym == SDLK_a) {
+       avatar->rotateAboutRelZ(40.0f);
+   }
+   else if (key.keysym.sym == SDLK_s) {
+       avatar->moveRelative(Vector(10, 0, 0));
+   }
+   else if (key.keysym.sym == SDLK_d) {
+       avatar->rotateAboutRelZ(-40.0f);
    }
 }
 
@@ -310,11 +326,39 @@ void Aftr::GLViewInvisibleMaze::loadMap()
 
     }
 
+    //Generate generate the maze and create a series of WO's to represent it 
+    {
+        Maze* maze = new Maze(4, 5); 
+
+        cout << endl << endl << "MAZE STRING" << endl << endl; 
+        cout << endl << maze->toString() << endl;
+    }
+
+    //load in a wall segment 
+    {
+            WO* wall = WO::New(wallPath, Vector(3, 3, 3), MESH_SHADING_TYPE::mstFLAT);
+            wall->setLabel("wall");
+            wall->setPosition(Vector(0, 20, 6.4));
+
+            wall->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
+            wall->upon_async_model_loaded([wall]()
+                {
+                    ModelMeshSkin& wallSkin = wall->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);
+                    wallSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
+                    wallSkin.setDiffuse(aftrColor4f(0.8f, 0.8f, 0.8f, 0.5f)); //Diffuse color components (ie, matte shading color of this object)
+                    wallSkin.setSpecular(aftrColor4f(0.2f, 0.2f, 0.2f, 1.0f)); //Specular color component (ie, how "shiney" it is)
+                    wallSkin.setSpecularCoefficient(10); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
+
+                }
+            );
+            worldLst->push_back(wall);
+    }
+
     //load the player avatar 
     {
         avatar = WO::New(dogPath, Vector(3,3,3), MESH_SHADING_TYPE::mstFLAT); 
         avatar->setLabel("avatar");
-        avatar->setPosition(Vector(0,0,0)); 
+        avatar->setPosition(Vector(10,0,3.65)); 
         
         avatar->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE; 
         WO* a = avatar; 
@@ -330,29 +374,6 @@ void Aftr::GLViewInvisibleMaze::loadMap()
         );
         worldLst->push_back(avatar);
 
-    }
-
-    //load in a wall segment 
-    {
-        {
-            WO* wall = WO::New(wallPath, Vector(3, 3, 3), MESH_SHADING_TYPE::mstFLAT);
-            wall->setLabel("wall");
-            wall->setPosition(Vector(0, 0, 0));
-
-            wall->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
-            wall->upon_async_model_loaded([wall]()
-                {
-                    ModelMeshSkin& wallSkin = wall->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);
-                    wallSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
-                    wallSkin.setDiffuse(aftrColor4f(0.8f, 0.8f, 0.8f, 0.5f)); //Diffuse color components (ie, matte shading color of this object)
-                    wallSkin.setSpecular(aftrColor4f(0.2f, 0.2f, 0.2f, 1.0f)); //Specular color component (ie, how "shiney" it is)
-                    wallSkin.setSpecularCoefficient(10); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
-
-                }
-            );
-            worldLst->push_back(wall);
-
-        }
     }
 
     //Render label text onto the screen with project name 
@@ -388,7 +409,9 @@ void Aftr::GLViewInvisibleMaze::loadMap()
                if (ImGui::SliderFloat("Main Volume", &volumeScalar, 0.0, 1.0)) {
                    soundEngine->setSoundVolume(volumeScalar);
                }
-           }       
+           }  
+           ImGui::Text("");
+
       } );
    this->worldLst->push_back( gui );
 
