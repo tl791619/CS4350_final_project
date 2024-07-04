@@ -5,6 +5,7 @@
 #include "WOSoundObject.h"
 #include "NetMessengerClient.h"
 #include "PxPhysicsAPI.h" 
+#include "Maze.h"
 
 namespace Aftr
 {
@@ -45,8 +46,11 @@ namespace Aftr
        irrklang::ISoundEngine* soundEngine = nullptr;
        float volumeScalar = 0.0;
 
-       //object rendering 
+       //avatar and maze 
        WO* avatar = nullptr; 
+       Maze* maze = nullptr; 
+       std::string wallPath = "";
+       void placeWallSegment(float x, float y, bool rotate); 
 
        bool pause = true; //controls running of physics simulation, defualt to paused 
 

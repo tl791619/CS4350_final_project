@@ -118,18 +118,19 @@ void GLViewInvisibleMaze::onCreate()
 
    //set the camera chase actor type 
    this->setActorChaseType(LOCKEDRELATIVE);
+   //this->setActorChaseType(STANDARDEZNAV);
 
    //make sure the camera follows the avatar at a set relative offset 
-   ((CameraLockedRelative*)this->getCamera())->setOffset(Vector(30, 0, 15));
+   ((CameraLockedRelative*)this->getCamera())->setOffset(Vector(16, 0, 8));
 
    this->getCamera()->setActorToWatch(avatar);
 
-   this->getCamera()->setCameraLookDirection(avatar->getPosition() * -1);
+   this->getCamera()->setCameraLookDirection(Vector(0,10,0));
 
    //create a camera object that follows the avatar
         //WO* LOZCam = ...
 
-        //set hte new camera as the GLView actor 
+        //set the new camera as the GLView actor 
 }
 
 
@@ -216,17 +217,22 @@ void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
 {
    GLView::onKeyDown( key );
 
+   //avatar/camera controls 
    if( key.keysym.sym == SDLK_w ){
-       avatar->moveRelative(Vector(-10, 0, 0));
+       avatar->setPosition(avatar->getPosition() + (avatar->getLookDirection() * -5));
    }
    else if (key.keysym.sym == SDLK_a) {
-       avatar->rotateAboutRelZ(40.0f);
+       avatar->rotateAboutRelZ(0.785f);
    }
    else if (key.keysym.sym == SDLK_s) {
-       avatar->moveRelative(Vector(10, 0, 0));
+       avatar->setPosition(avatar->getPosition() + (avatar->getLookDirection() * 5));
    }
    else if (key.keysym.sym == SDLK_d) {
-       avatar->rotateAboutRelZ(-40.0f);
+       avatar->rotateAboutRelZ(-0.785f);
+   }
+   else if (key.keysym.sym == SDLK_l) {
+       Vector look(avatar->getPosition().x, avatar->getPosition().y, 0);
+       this->getCamera()->setCameraLookAtPoint(look);
    }
 }
 
@@ -234,6 +240,30 @@ void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
 void GLViewInvisibleMaze::onKeyUp(const SDL_KeyboardEvent& key)
 {
     GLView::onKeyUp(key);
+}
+
+void GLViewInvisibleMaze::placeWallSegment(float x, float y, bool rotate) {
+    
+    WO* wall = WO::New(wallPath, Vector(3, 3, 3), MESH_SHADING_TYPE::mstFLAT);
+    wall->setLabel("wall");
+    wall->setPosition(Vector(x, y, 6.4));
+
+    if (rotate) {
+        wall->rotateAboutGlobalZ(1.57);
+    }
+
+    wall->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
+    wall->upon_async_model_loaded([wall]()
+        {
+            ModelMeshSkin& wallSkin = wall->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);
+            wallSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
+            wallSkin.setDiffuse(aftrColor4f(0.8f, 0.8f, 0.8f, 0.5f)); //Diffuse color components (ie, matte shading color of this object)
+            wallSkin.setSpecular(aftrColor4f(0.2f, 0.2f, 0.2f, 1.0f)); //Specular color component (ie, how "shiney" it is)
+            wallSkin.setSpecularCoefficient(10); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
+
+        }
+    );
+    worldLst->push_back(wall);
 }
 
 void Aftr::GLViewInvisibleMaze::loadMap()
@@ -254,6 +284,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     //initialize sound engine (default settings)
     soundEngine = createIrrKlangDevice();
 
+    \
     //play background ambience (looped) 
     {
         soundEngine->play2D("../mm/sounds/forest_wind_birds_cicadas.wav", true);
@@ -272,8 +303,9 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     std::string cubePath(ManagerEnvironmentConfiguration::getSMM() + "/models/cube4x4x4redShinyPlastic_pp.wrl");
     std::string grass(ManagerEnvironmentConfiguration::getSMM() + "/models/grassFloor400x400_pp.wrl"); 
     std::string spherePath(ManagerEnvironmentConfiguration::getLMM() + "models/SimpleSphere/simple_sphere.obj");
-    std::string wallPath(ManagerEnvironmentConfiguration::getLMM() + "models/WallSegment/wall_segment.obj");
     std::string dogPath(ManagerEnvironmentConfiguration::getLMM() + "models/Dog/dog.obj");
+
+    wallPath = ManagerEnvironmentConfiguration::getLMM() + "models/WallSegment/wall_segment.obj";
 
     //Load skybox texture from Hummus.name 
     std::vector< std::string > skyBoxImageNames; //vector to store texture paths
@@ -328,37 +360,46 @@ void Aftr::GLViewInvisibleMaze::loadMap()
 
     //Generate generate the maze and create a series of WO's to represent it 
     {
-        Maze* maze = new Maze(4, 5); 
+        int height = 12; 
+        int width = 12; 
+        maze = new Maze(height, width); 
 
+        //print out the maze 
         cout << endl << endl << "MAZE STRING" << endl << endl; 
         cout << endl << maze->toString() << endl;
-    }
 
-    //load in a wall segment 
-    {
-            WO* wall = WO::New(wallPath, Vector(3, 3, 3), MESH_SHADING_TYPE::mstFLAT);
-            wall->setLabel("wall");
-            wall->setPosition(Vector(0, 20, 6.4));
+        //place the walls on the southern maze edge
+        for (int i = 0; i < width; i++) {
+            if (maze->getCell(0, i)->hasSouthWall()) {
+                placeWallSegment(0, i * (- 9) - 4.5, false);
+            }
+        }
+        //place the walls on the western maze edge
+        for (int i = 0; i < height; i++) {
+            if (maze->getCell(i, 0)->hasWestWall()) {
+                placeWallSegment(i * 9 + 4.5, 0, true);
+            }
+        }
 
-            wall->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
-            wall->upon_async_model_loaded([wall]()
-                {
-                    ModelMeshSkin& wallSkin = wall->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);
-                    wallSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
-                    wallSkin.setDiffuse(aftrColor4f(0.8f, 0.8f, 0.8f, 0.5f)); //Diffuse color components (ie, matte shading color of this object)
-                    wallSkin.setSpecular(aftrColor4f(0.2f, 0.2f, 0.2f, 1.0f)); //Specular color component (ie, how "shiney" it is)
-                    wallSkin.setSpecularCoefficient(10); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
-
+        //place all of the other maze walls 
+        for (int h = 0; h < height; h++) {
+            for (int w = 0; w < width; w++) {
+                if (maze->getCell(h, w)->hasNorthWall()) {
+                    placeWallSegment(h * 9 + 9, w * (-9) - 4.5, false);
                 }
-            );
-            worldLst->push_back(wall);
+                if (maze->getCell(h, w)->hasEastWall()) {
+                    placeWallSegment(h * 9 + 4.5, w * (-9) - 9, true);
+                }
+            }
+        }
+
     }
 
     //load the player avatar 
     {
-        avatar = WO::New(dogPath, Vector(3,3,3), MESH_SHADING_TYPE::mstFLAT); 
+        avatar = WO::New(dogPath, Vector(2,2,2), MESH_SHADING_TYPE::mstFLAT); 
         avatar->setLabel("avatar");
-        avatar->setPosition(Vector(10,0,3.65)); 
+        avatar->setPosition(Vector(10,-10, 2.4 )); 
         
         avatar->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE; 
         WO* a = avatar; 
