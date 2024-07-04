@@ -121,11 +121,12 @@ void GLViewInvisibleMaze::onCreate()
    //this->setActorChaseType(STANDARDEZNAV);
 
    //make sure the camera follows the avatar at a set relative offset 
-   ((CameraLockedRelative*)this->getCamera())->setOffset(Vector(16, 0, 8));
+   ((CameraLockedRelative*)this->getCamera())->setOffset(Vector(6, 0, 4));
+   //this->getCamera()->setPosition(Vector(0,0,10)); 
 
    this->getCamera()->setActorToWatch(avatar);
 
-   this->getCamera()->setCameraLookDirection(Vector(0,10,0));
+   this->getCamera()->setCameraLookDirection(avatar->getLookDirection()*-1);
 
    //create a camera object that follows the avatar
         //WO* LOZCam = ...
@@ -218,21 +219,27 @@ void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
    GLView::onKeyDown( key );
 
    //avatar/camera controls 
+   //move in the avatar's look direction 
    if( key.keysym.sym == SDLK_w ){
-       avatar->setPosition(avatar->getPosition() + (avatar->getLookDirection() * -5));
+       avatar->setPosition(avatar->getPosition() + (avatar->getLookDirection() * -2));
    }
+   //rotate counterclockwise 
    else if (key.keysym.sym == SDLK_a) {
        avatar->rotateAboutRelZ(0.785f);
+       //this->getCamera()->setCameraLookDirection(avatar->getLookDirection() * -1);
    }
+   //move in opposite the avatar's look direction 
    else if (key.keysym.sym == SDLK_s) {
-       avatar->setPosition(avatar->getPosition() + (avatar->getLookDirection() * 5));
+       avatar->setPosition(avatar->getPosition() + (avatar->getLookDirection() * 2));
    }
+   //rotate clockwise 
    else if (key.keysym.sym == SDLK_d) {
        avatar->rotateAboutRelZ(-0.785f);
+       //this->getCamera()->setCameraLookDirection(avatar->getLookDirection() * -1);
    }
    else if (key.keysym.sym == SDLK_l) {
-       Vector look(avatar->getPosition().x, avatar->getPosition().y, 0);
-       this->getCamera()->setCameraLookAtPoint(look);
+       //Vector look = avatar->getPosition();
+       //this->getCamera()->setCameraLookAtPoint(look);
    }
 }
 
@@ -244,9 +251,9 @@ void GLViewInvisibleMaze::onKeyUp(const SDL_KeyboardEvent& key)
 
 void GLViewInvisibleMaze::placeWallSegment(float x, float y, bool rotate) {
     
-    WO* wall = WO::New(wallPath, Vector(3, 3, 3), MESH_SHADING_TYPE::mstFLAT);
+    WO* wall = WO::New(wallPath, Vector(3, 3, 2), MESH_SHADING_TYPE::mstFLAT);
     wall->setLabel("wall");
-    wall->setPosition(Vector(x, y, 6.4));
+    wall->setPosition(Vector(x, y, 4.25)); //vertical scale 3 = 6.4 height 
 
     if (rotate) {
         wall->rotateAboutGlobalZ(1.57);
@@ -278,8 +285,8 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     Axes::isVisible = true;
     this->glRenderer->isUsingShadowMapping(false); //set to TRUE to enable shadow mapping, must be using GL 3.2+
 
-    this->cam->setPosition(20, 20, 10);
-    this->cam->setCameraLookAtPoint(Vector(0,0,10));
+    //this->cam->setPosition(20, 20, 10);
+    //this->cam->setCameraLookAtPoint(Vector(0,0,10));
 
     //initialize sound engine (default settings)
     soundEngine = createIrrKlangDevice();
@@ -311,6 +318,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     std::vector< std::string > skyBoxImageNames; //vector to store texture paths
     skyBoxImageNames.push_back(ManagerEnvironmentConfiguration::getLMM() + "/images/tantolunden_skybox.png");
 
+    //create a light 
     {
         //Create a light
         float ga = 0.1f; //Global Ambient Light level for this module
@@ -397,9 +405,9 @@ void Aftr::GLViewInvisibleMaze::loadMap()
 
     //load the player avatar 
     {
-        avatar = WO::New(dogPath, Vector(2,2,2), MESH_SHADING_TYPE::mstFLAT); 
+        avatar = WO::New(dogPath, Vector(1,1,1), MESH_SHADING_TYPE::mstFLAT); 
         avatar->setLabel("avatar");
-        avatar->setPosition(Vector(10,-10, 2.4 )); 
+        avatar->setPosition(Vector(-10,-10, 1.2)); 
         
         avatar->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE; 
         WO* a = avatar; 
@@ -462,7 +470,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
 
 void GLViewInvisibleMaze::createInvisibleMazeWayPoints()
 {
-   // Create a waypoint with a radius of 3, a frequency of 5 seconds, activated by GLView's camera, and is visible.
+   // Create a waypoint with a radius of 3, a frequency of 5 seconds, activated by GLView's camera, and is invisible.
    WayPointParametersBase params(this);
    params.frequency = 5000;
    params.useCamera = true;
