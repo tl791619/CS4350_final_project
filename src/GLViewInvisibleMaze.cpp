@@ -117,14 +117,14 @@ void GLViewInvisibleMaze::onCreate()
    
 
    //set the camera chase actor type 
-   this->setActorChaseType(LOCKEDRELATIVE);
-   //this->setActorChaseType(STANDARDEZNAV);
+   //this->setActorChaseType(LOCKEDRELATIVE);
+   this->setActorChaseType(STANDARDEZNAV);
 
    //make sure the camera follows the avatar at a set relative offset 
-   ((CameraLockedRelative*)this->getCamera())->setOffset(Vector(6, 0, 4));
-   //this->getCamera()->setPosition(Vector(0,0,10)); 
+   //((CameraLockedRelative*)this->getCamera())->setOffset(Vector(6, 0, 4));
+   this->getCamera()->setPosition(Vector(10,10,10)); 
 
-   this->getCamera()->setActorToWatch(avatar);
+   //this->getCamera()->setActorToWatch(avatar);
 
    this->getCamera()->setCameraLookDirection(avatar->getLookDirection()*-1);
 
@@ -184,8 +184,11 @@ void GLViewInvisibleMaze::updateWorld()
        pxScene->fetchResults(true);
 
        //sync physx actors with WOs
-       
+       update(pxCube, cube);
+       update(pxAvatar, avatar); 
    }
+
+   //PxTransform dogPos(avatar->getPosition().x, avatar->getPosition().z, avatar->getPosition().y);
 
 }
 
@@ -226,7 +229,7 @@ void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
    //rotate counterclockwise 
    else if (key.keysym.sym == SDLK_a) {
        avatar->rotateAboutRelZ(0.785f);
-       //this->getCamera()->setCameraLookDirection(avatar->getLookDirection() * -1);
+       this->getCamera()->setCameraLookDirection(avatar->getLookDirection() * -1);
    }
    //move in opposite the avatar's look direction 
    else if (key.keysym.sym == SDLK_s) {
@@ -235,7 +238,7 @@ void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
    //rotate clockwise 
    else if (key.keysym.sym == SDLK_d) {
        avatar->rotateAboutRelZ(-0.785f);
-       //this->getCamera()->setCameraLookDirection(avatar->getLookDirection() * -1);
+       this->getCamera()->setCameraLookDirection(avatar->getLookDirection() * -1);
    }
    else if (key.keysym.sym == SDLK_l) {
        //Vector look = avatar->getPosition();
@@ -253,7 +256,7 @@ void GLViewInvisibleMaze::placeWallSegment(float x, float y, bool rotate) {
     
     WO* wall = WO::New(wallPath, Vector(3, 3, 2), MESH_SHADING_TYPE::mstFLAT);
     wall->setLabel("wall");
-    wall->setPosition(Vector(x, y, 4.25)); //vertical scale 3 = 6.4 height 
+    wall->setPosition(Vector(x, y, 4.25)); //vertical scale 3 = 6.4 height  
 
     if (rotate) {
         wall->rotateAboutGlobalZ(1.57);
@@ -271,6 +274,21 @@ void GLViewInvisibleMaze::placeWallSegment(float x, float y, bool rotate) {
         }
     );
     worldLst->push_back(wall);
+
+
+    //create a static rigid physics object in the same place as the wall 
+    float width = 4.5;
+    float thickness = 0.5;
+
+    PxTransform t(PxVec3(x, 4.25f, y));
+    if (rotate) {
+        PxRigidStatic* pxWall = PxCreateStatic(*physics, t, PxBoxGeometry(width, 4.5, thickness), *genMaterial);
+        pxScene->addActor(*pxWall);
+    }
+    else {
+        PxRigidStatic* pxWall = PxCreateStatic(*physics, t, PxBoxGeometry(thickness, 4.5, width), *genMaterial);
+        pxScene->addActor(*pxWall);
+    } 
 }
 
 void Aftr::GLViewInvisibleMaze::loadMap()
@@ -366,7 +384,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
 
     }
 
-    //Generate generate the maze and create a series of WO's to represent it 
+    //Generate the maze and create a series of static rigid WO's to represent it 
     {
         int height = 12; 
         int width = 12; 
@@ -423,6 +441,35 @@ void Aftr::GLViewInvisibleMaze::loadMap()
         );
         worldLst->push_back(avatar);
 
+        PxTransform dogPos(avatar->getPosition().x, avatar->getPosition().z, avatar->getPosition().y);
+        pxAvatar = PxCreateDynamic(*physics, dogPos, PxBoxGeometry(1, 1.2, 3), *genMaterial, 10.0f); 
+
+    }
+
+    //load in a cube for collision testing 
+    {
+        //ISound* tempSound = soundEngine->play3D(soundEffect, vec3df(0, 0, 5), false, true, true);
+        cube = WO::New(cubePath, Vector(1, 1, 1), MESH_SHADING_TYPE::mstFLAT);
+        //cube->setVolume(0.5);
+        //cube->setMinDistance(10);
+        cube->setLabel("cube");
+        cube->setPosition(Vector(0, 0, 30));
+        cube->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
+        WO* c = cube;
+        cube->upon_async_model_loaded([c]()
+            {
+                ModelMeshSkin& cubeSkin = c->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);
+                cubeSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
+                cubeSkin.setDiffuse(aftrColor4f(1.0f, 1.0f, 1.0f, 1.0f)); //Diffuse color components (ie, matte shading color of this object)
+                cubeSkin.setSpecular(aftrColor4f(1.0f, 0.4f, 0.4f, 1.0f)); //Specular color component (ie, how "shiney" it is)
+                cubeSkin.setSpecularCoefficient(300); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
+            });
+        worldLst->push_back(cube);
+
+        PxTransform t(PxVec3(0.0f, 30.0f, 0.0f));
+        float halfExt = 2.0; //size of the cube model 
+        pxCube = PxCreateDynamic(*physics, t, PxBoxGeometry(halfExt, halfExt, halfExt), *genMaterial, 10.0f);
+        pxScene->addActor(*pxCube);
     }
 
     //Render label text onto the screen with project name 

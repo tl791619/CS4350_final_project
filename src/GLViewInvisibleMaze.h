@@ -69,7 +69,10 @@ namespace Aftr
        physx::PxPvdSceneClient* pvdClient = nullptr;
 
        //PhysX actors 
-       physx::PxRigidDynamic* pxDog = nullptr; 
+       physx::PxRigidDynamic* pxAvatar = nullptr; 
+       physx::PxRigidDynamic* pxCube = nullptr; 
+
+       WO* cube = nullptr; 
 
    };
 
