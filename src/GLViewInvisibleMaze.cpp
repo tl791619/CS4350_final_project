@@ -122,7 +122,7 @@ void GLViewInvisibleMaze::onCreate()
 
    //make sure the camera follows the avatar at a set relative offset 
    //((CameraLockedRelative*)this->getCamera())->setOffset(Vector(6, 0, 4));
-   this->getCamera()->setPosition(Vector(10,10,10)); 
+   this->getCamera()->setPosition(Vector(-20,-4.25,10)); 
 
    //this->getCamera()->setActorToWatch(avatar);
 
@@ -164,9 +164,9 @@ void GLViewInvisibleMaze::updateWorld()
                           //this call.
                           
    //update the listener position to the camera's position
-   vec3df cameraPosition = vectorToVec3df(this->getCamera()->getPosition());
-   vec3df lookDirection = vectorToVec3df(this->getCamera()->getLookDirection());
-   soundEngine->setListenerPosition(cameraPosition, lookDirection, vec3df(0,0,0), vec3df(0,0,1));
+   vec3df avatarPosition = vectorToVec3df(avatar->getPosition());
+   vec3df lookDirection = vectorToVec3df(avatar->getLookDirection());
+   soundEngine->setListenerPosition(avatarPosition, lookDirection, vec3df(0,0,0), vec3df(0,0,1));
    
 
    //PVD sending information 
@@ -187,8 +187,6 @@ void GLViewInvisibleMaze::updateWorld()
        update(pxAvatar, avatar); 
        //update(pxCube, cube);
    }
-
-   //PxTransform dogPos(avatar->getPosition().x, avatar->getPosition().z, avatar->getPosition().y);
 
 }
 
@@ -224,27 +222,27 @@ void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
    //avatar/camera controls 
    //apply a force in the avatar's look direction 
    if( key.keysym.sym == SDLK_w ){
-       Vector force = avatar->getLookDirection() * -50000; 
+       Vector force = avatar->getLookDirection() * -20000; 
        pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE); 
        
        //pxCube->addForce(PxVec3(50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
    }
    //rotate counterclockwise 
    else if (key.keysym.sym == SDLK_a) {
-       pxAvatar->addTorque(PxVec3(0,-200000, 0)); 
+       pxAvatar->addTorque(PxVec3(0,-20000, 0)); 
 
        //pxCube->addForce(PxVec3(0, 0, 50000), PxForceMode::eFORCE); //force controls testing 
    }
    //apply a force in opposite the avatar's look direction 
    else if (key.keysym.sym == SDLK_s) {
-       Vector force = avatar->getLookDirection() * 50000;
+       Vector force = avatar->getLookDirection() * 20000;
        pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE);
 
        //pxCube->addForce(PxVec3(-50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
    }
    //rotate clockwise 
    else if (key.keysym.sym == SDLK_d) {
-       pxAvatar->addTorque(PxVec3(0, 200000, 0));
+       pxAvatar->addTorque(PxVec3(0, 20000, 0));
 
        //pxCube->addForce(PxVec3(0, 0, -50000), PxForceMode::eFORCE); //force controls testing 
    }
@@ -452,7 +450,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
 
         //create the physics actor at the same global pose as the avatar
         PxTransform avatarPose = PxTransform(aftrToPxMat4(avatar->getPose())); 
-        pxAvatar = PxCreateDynamic(*physics, avatarPose, PxBoxGeometry(0.75, 1.2, 3), *genMaterial, 10.0f); 
+        pxAvatar = PxCreateDynamic(*physics, avatarPose, PxBoxGeometry(2.1, 1.2, 0.7), *genMaterial, 10.0f); 
 
         pxScene->addActor(*pxAvatar);
     }
