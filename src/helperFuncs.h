@@ -56,8 +56,6 @@ Mat4 pxToAftrMat4(physx::PxMat44 m) {
 			   to_string(y.x) + " " + to_string(y.z) + " " + to_string(y.y) + " " + to_string(y.w) + " " +
 			   to_string(w.x) + " " + to_string(w.z) + " " + to_string(w.y) + " " + to_string(w.w);
 
-	cout << s << endl << endl; 
-
 	Mat4 t(s);
 	return t;
 }

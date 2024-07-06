@@ -222,23 +222,29 @@ void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
    GLView::onKeyDown( key );
 
    //avatar/camera controls 
-   //move in the avatar's look direction 
+   //apply a force in the avatar's look direction 
    if( key.keysym.sym == SDLK_w ){
-       avatar->setPosition(avatar->getPosition() + (avatar->getLookDirection() * -2));
+       //Vector force = avatar->getLookDirection() * -50000; 
+       //pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE); 
+       
+       pxCube->addForce(PxVec3(50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
    }
    //rotate counterclockwise 
    else if (key.keysym.sym == SDLK_a) {
-       avatar->rotateAboutRelZ(0.785f);
-       this->getCamera()->setCameraLookDirection(avatar->getLookDirection() * -1);
+
+       pxCube->addForce(PxVec3(0, 0, 50000), PxForceMode::eFORCE); //force controls testing 
    }
-   //move in opposite the avatar's look direction 
+   //apply a force in opposite the avatar's look direction 
    else if (key.keysym.sym == SDLK_s) {
-       avatar->setPosition(avatar->getPosition() + (avatar->getLookDirection() * 2));
+       //Vector force = avatar->getLookDirection() * 50000;
+       //pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE);
+
+       pxCube->addForce(PxVec3(-50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
    }
    //rotate clockwise 
    else if (key.keysym.sym == SDLK_d) {
-       avatar->rotateAboutRelZ(-0.785f);
-       this->getCamera()->setCameraLookDirection(avatar->getLookDirection() * -1);
+
+       pxCube->addForce(PxVec3(0, 0, -50000), PxForceMode::eFORCE); //force controls testing 
    }
    else if (key.keysym.sym == SDLK_l) {
        //Vector look = avatar->getPosition();
@@ -278,7 +284,7 @@ void GLViewInvisibleMaze::placeWallSegment(float x, float y, bool rotate) {
 
     //create a static rigid physics object in the same place as the wall 
     float width = 4.5;
-    float thickness = 0.5;
+    float thickness = 0.75;
 
     PxTransform t(PxVec3(x, 4.25f, y));
     if (rotate) {
@@ -425,7 +431,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     {
         avatar = WO::New(dogPath, Vector(1,1,1), MESH_SHADING_TYPE::mstFLAT); 
         avatar->setLabel("avatar");
-        avatar->setPosition(Vector(-10,-10, 1.2)); 
+        avatar->setPosition(Vector(-10,-5, 2)); //half height = 1.2
         
         avatar->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE; 
         WO* a = avatar; 
@@ -442,8 +448,11 @@ void Aftr::GLViewInvisibleMaze::loadMap()
         worldLst->push_back(avatar);
 
         PxTransform dogPos(avatar->getPosition().x, avatar->getPosition().z, avatar->getPosition().y);
-        pxAvatar = PxCreateDynamic(*physics, dogPos, PxBoxGeometry(1, 1.2, 3), *genMaterial, 10.0f); 
+        pxAvatar = PxCreateDynamic(*physics, dogPos, PxBoxGeometry(2, 1.2, 3), *genMaterial, 10.0f); 
 
+        pxAvatar->setActorFlag(PxActorFlag::eSEND_SLEEP_NOTIFIES, true);
+
+        pxScene->addActor(*pxAvatar);
     }
 
     //load in a cube for collision testing 
