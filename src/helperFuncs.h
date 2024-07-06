@@ -22,25 +22,25 @@ using namespace std;
 
 PxMat44 aftrToPxMat4(Mat4 m) {
 	PxMat44 t; 
-	t.column0.x = m.at(0);
-	t.column0.y = m.at(2);
-	t.column0.z = m.at(1);
-	t.column0.w = m.at(3);
+	t.column0.x = m.at(0,0);
+	t.column0.y = m.at(0,2);
+	t.column0.z = m.at(0,1);
+	t.column0.w = m.at(0,3);
 
-	t.column1.x = m.at(4);
-	t.column1.y = m.at(6);
-	t.column1.z = m.at(5);
-	t.column1.w = m.at(7);
+	t.column1.x = m.at(2,0);
+	t.column1.y = m.at(2,2);
+	t.column1.z = m.at(2,1);
+	t.column1.w = m.at(2,3);
 
-	t.column2.x = m.at(8);
-	t.column2.y = m.at(10);
-	t.column2.z = m.at(9);
-	t.column2.w = m.at(11);
+	t.column2.x = m.at(1, 0);
+	t.column2.y = m.at(1, 2);
+	t.column2.z = m.at(1, 1);
+	t.column2.w = m.at(1, 3);
 
-	t.column3.x = m.at(12);
-	t.column3.y = m.at(14);
-	t.column3.z = m.at(13);
-	t.column3.w = m.at(15);
+	t.column3.x = m.at(3,0);
+	t.column3.y = m.at(3,2);
+	t.column3.z = m.at(3,1);
+	t.column3.w = m.at(3,3);
 
 	return t; 
 }

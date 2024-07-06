@@ -184,8 +184,8 @@ void GLViewInvisibleMaze::updateWorld()
        pxScene->fetchResults(true);
 
        //sync physx actors with WOs
-       update(pxCube, cube);
        update(pxAvatar, avatar); 
+       //update(pxCube, cube);
    }
 
    //PxTransform dogPos(avatar->getPosition().x, avatar->getPosition().z, avatar->getPosition().y);
@@ -224,27 +224,29 @@ void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
    //avatar/camera controls 
    //apply a force in the avatar's look direction 
    if( key.keysym.sym == SDLK_w ){
-       //Vector force = avatar->getLookDirection() * -50000; 
-       //pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE); 
+       Vector force = avatar->getLookDirection() * -50000; 
+       pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE); 
        
-       pxCube->addForce(PxVec3(50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
+       //pxCube->addForce(PxVec3(50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
    }
    //rotate counterclockwise 
    else if (key.keysym.sym == SDLK_a) {
+       pxAvatar->addTorque(PxVec3(0,-200000, 0)); 
 
-       pxCube->addForce(PxVec3(0, 0, 50000), PxForceMode::eFORCE); //force controls testing 
+       //pxCube->addForce(PxVec3(0, 0, 50000), PxForceMode::eFORCE); //force controls testing 
    }
    //apply a force in opposite the avatar's look direction 
    else if (key.keysym.sym == SDLK_s) {
-       //Vector force = avatar->getLookDirection() * 50000;
-       //pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE);
+       Vector force = avatar->getLookDirection() * 50000;
+       pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE);
 
-       pxCube->addForce(PxVec3(-50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
+       //pxCube->addForce(PxVec3(-50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
    }
    //rotate clockwise 
    else if (key.keysym.sym == SDLK_d) {
+       pxAvatar->addTorque(PxVec3(0, 200000, 0));
 
-       pxCube->addForce(PxVec3(0, 0, -50000), PxForceMode::eFORCE); //force controls testing 
+       //pxCube->addForce(PxVec3(0, 0, -50000), PxForceMode::eFORCE); //force controls testing 
    }
    else if (key.keysym.sym == SDLK_l) {
        //Vector look = avatar->getPosition();
@@ -315,7 +317,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     //initialize sound engine (default settings)
     soundEngine = createIrrKlangDevice();
 
-    \
+    
     //play background ambience (looped) 
     {
         soundEngine->play2D("../mm/sounds/forest_wind_birds_cicadas.wav", true);
@@ -431,7 +433,8 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     {
         avatar = WO::New(dogPath, Vector(1,1,1), MESH_SHADING_TYPE::mstFLAT); 
         avatar->setLabel("avatar");
-        avatar->setPosition(Vector(-10,-5, 2)); //half height = 1.2
+        avatar->setPosition(Vector(-10,-4.25, 2)); //half height = 1.2
+        avatar->rotateAboutGlobalZ(3.14159); //rotate the avatar 180 degrees 
         
         avatar->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE; 
         WO* a = avatar; 
@@ -447,16 +450,15 @@ void Aftr::GLViewInvisibleMaze::loadMap()
         );
         worldLst->push_back(avatar);
 
-        PxTransform dogPos(avatar->getPosition().x, avatar->getPosition().z, avatar->getPosition().y);
-        pxAvatar = PxCreateDynamic(*physics, dogPos, PxBoxGeometry(2, 1.2, 3), *genMaterial, 10.0f); 
-
-        pxAvatar->setActorFlag(PxActorFlag::eSEND_SLEEP_NOTIFIES, true);
+        //create the physics actor at the same global pose as the avatar
+        PxTransform avatarPose = PxTransform(aftrToPxMat4(avatar->getPose())); 
+        pxAvatar = PxCreateDynamic(*physics, avatarPose, PxBoxGeometry(0.75, 1.2, 3), *genMaterial, 10.0f); 
 
         pxScene->addActor(*pxAvatar);
     }
 
     //load in a cube for collision testing 
-    {
+    /* {
         //ISound* tempSound = soundEngine->play3D(soundEffect, vec3df(0, 0, 5), false, true, true);
         cube = WO::New(cubePath, Vector(1, 1, 1), MESH_SHADING_TYPE::mstFLAT);
         //cube->setVolume(0.5);
@@ -479,7 +481,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
         float halfExt = 2.0; //size of the cube model 
         pxCube = PxCreateDynamic(*physics, t, PxBoxGeometry(halfExt, halfExt, halfExt), *genMaterial, 10.0f);
         pxScene->addActor(*pxCube);
-    }
+    }*/
 
     //Render label text onto the screen with project name 
     {
