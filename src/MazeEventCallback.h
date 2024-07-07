@@ -20,7 +20,7 @@ class MazeEventCallback : public PxSimulationEventCallback
 public:
 	//constructor defined to take member variable of a sound effect 
 	//make sure that the sound is defined BEFORE passing it to the event callback 
-	//MazeEventCallback(ISound* sound); 
+	MazeEventCallback(ISoundEngine* engine, ISoundSource* source); 
 
 	//this is the only funciton that we care about
 	void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs);
@@ -33,6 +33,7 @@ public:
 	void onAdvance(const PxRigidBody* const*, const PxTransform*, const PxU32) {}
 
 protected: 
-	ISound* soundEffect = nullptr; 
-	
+	//sound effect playback stuff 
+	ISoundEngine* soundEngine = nullptr; 
+	ISoundSource* soundEffect = nullptr; 
 };

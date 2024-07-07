@@ -166,7 +166,7 @@ void GLViewInvisibleMaze::updateWorld()
                           
    //update the listener position to the camera's position
    vec3df avatarPosition = vectorToVec3df(avatar->getPosition());
-   vec3df lookDirection = vectorToVec3df(avatar->getLookDirection());
+   vec3df lookDirection = vectorToVec3df(avatar->getLookDirection()*-1);
    soundEngine->setListenerPosition(avatarPosition, lookDirection, vec3df(0,0,0), vec3df(0,0,1));
    
 
@@ -343,12 +343,15 @@ void Aftr::GLViewInvisibleMaze::loadMap()
 
     //set up physx scene event callback 
     {
-        //define a sound effect 
+        //define a sound effect source
+        ISoundSource* soundSource = soundEngine->addSoundSourceFromFile(soundEffect);
+        soundSource->setDefaultMinDistance(50.0); 
 
-
-        MazeEventCallback* mazeCallback = new MazeEventCallback(); 
+        //pass the maze event callback into the scene 
+        MazeEventCallback* mazeCallback = new MazeEventCallback(soundEngine, soundSource); 
         pxScene->setSimulationEventCallback(mazeCallback);
 
+        //collisionSoundEffect->setSoundStopEventReceiver
     }
 
 

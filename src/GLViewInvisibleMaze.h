@@ -50,7 +50,7 @@ namespace Aftr
 
        //sound engine varaibles
        irrklang::ISoundEngine* soundEngine = nullptr;
-       float volumeScalar = 0.0;
+       float volumeScalar = 0.5;
 
        //avatar and maze 
        WO* avatar = nullptr; 

@@ -12,15 +12,15 @@ using namespace irrklang;
 using namespace std; 
 
 
-//MazeEventCallback::MazeEventCallback(ISound* sound) {
-//	soundEffect = sound; 
-//}
+MazeEventCallback::MazeEventCallback(ISoundEngine* engine, ISoundSource* source) {
+	soundEngine = engine; 
+	soundEffect = source; 
+}
 
 void MazeEventCallback::onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs)
 {
 	PX_UNUSED((pairHeader));
 	vector<PxContactPairPoint> contactPoints;
-
 
 	for (PxU32 i = 0; i < nbPairs; i++) 
 	{
@@ -32,12 +32,12 @@ void MazeEventCallback::onContact(const PxContactPairHeader& pairHeader, const P
 
 			for (PxU32 j = 0; j < contactCount; j++) 
 			{
-				//PxVec3 position = contactPoints[j].position;
-				//soundEffect->setPosition(vec3df(position.y, position.x, position.z)); 
+				//cout << "CONTACT DETECTED" << endl;
 
-				cout << "CONTACT DETECTED" << endl; 
+				//play a 3D sound from the collision contact point 
 
-				//contactPoints[j].impulse;
+				PxVec3 position = contactPoints[j].position;
+				soundEngine->play3D(soundEffect, vec3df(position.z, position.x, position.y));
 				
 			}
 		}
