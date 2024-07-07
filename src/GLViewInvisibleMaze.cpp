@@ -42,6 +42,7 @@
 #include "helperFuncs.h"
 #include "Maze.h" 
 #include "MazeCell.h"
+#include "MazeEventCallback.h"
 
 //audio library includes 
 #include "irrKlang.h"
@@ -84,7 +85,7 @@ GLViewInvisibleMaze::GLViewInvisibleMaze( const std::vector< std::string >& args
        sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
        pxDispatcher = PxDefaultCpuDispatcherCreate(2);
        sceneDesc.cpuDispatcher = pxDispatcher;
-       sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+       sceneDesc.filterShader = contactReportFilterShader; 
 
        pxScene = physics->createScene(sceneDesc);
        pxScene->setFlag(PxSceneFlag::eENABLE_ACTIVE_ACTORS, true);
@@ -173,7 +174,6 @@ void GLViewInvisibleMaze::updateWorld()
    pvdClient = pxScene->getScenePvdClient();
    if (pvdClient)
    {
-       pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
        pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
        pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
    }
@@ -190,68 +190,65 @@ void GLViewInvisibleMaze::updateWorld()
 
 }
 
-
 void GLViewInvisibleMaze::onResizeWindow( GLsizei width, GLsizei height )
 {
    GLView::onResizeWindow( width, height ); //call parent's resize method.
 }
-
 
 void GLViewInvisibleMaze::onMouseDown( const SDL_MouseButtonEvent& e )
 {
    GLView::onMouseDown( e );
 }
 
-
 void GLViewInvisibleMaze::onMouseUp( const SDL_MouseButtonEvent& e )
 {
    GLView::onMouseUp( e );
 }
-
 
 void GLViewInvisibleMaze::onMouseMove( const SDL_MouseMotionEvent& e )
 {
    GLView::onMouseMove( e );
 }
 
-
 void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
 {
    GLView::onKeyDown( key );
 
-   //avatar/camera controls 
-   //apply a force in the avatar's look direction 
-   if( key.keysym.sym == SDLK_w ){
-       Vector force = avatar->getLookDirection() * -20000; 
-       pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE); 
-       
-       //pxCube->addForce(PxVec3(50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
-   }
-   //rotate counterclockwise 
-   else if (key.keysym.sym == SDLK_a) {
-       pxAvatar->addTorque(PxVec3(0,-20000, 0)); 
+   //only accept avatar/camera control key inputs if physics is enabled 
+   if (!pause) {
+       //avatar/camera controls 
+       //apply a force in the avatar's look direction 
+       if (key.keysym.sym == SDLK_w) {
+           Vector force = avatar->getLookDirection() * -20000;
+           pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE);
 
-       //pxCube->addForce(PxVec3(0, 0, 50000), PxForceMode::eFORCE); //force controls testing 
-   }
-   //apply a force in opposite the avatar's look direction 
-   else if (key.keysym.sym == SDLK_s) {
-       Vector force = avatar->getLookDirection() * 20000;
-       pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE);
+           //pxCube->addForce(PxVec3(50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
+       }
+       //rotate counterclockwise 
+       else if (key.keysym.sym == SDLK_a) {
+           pxAvatar->addTorque(PxVec3(0, -20000, 0));
 
-       //pxCube->addForce(PxVec3(-50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
-   }
-   //rotate clockwise 
-   else if (key.keysym.sym == SDLK_d) {
-       pxAvatar->addTorque(PxVec3(0, 20000, 0));
+           //pxCube->addForce(PxVec3(0, 0, 50000), PxForceMode::eFORCE); //force controls testing 
+       }
+       //apply a force in opposite the avatar's look direction 
+       else if (key.keysym.sym == SDLK_s) {
+           Vector force = avatar->getLookDirection() * 20000;
+           pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE);
 
-       //pxCube->addForce(PxVec3(0, 0, -50000), PxForceMode::eFORCE); //force controls testing 
-   }
-   else if (key.keysym.sym == SDLK_l) {
-       //Vector look = avatar->getPosition();
-       //this->getCamera()->setCameraLookAtPoint(look);
+           //pxCube->addForce(PxVec3(-50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
+       }
+       //rotate clockwise 
+       else if (key.keysym.sym == SDLK_d) {
+           pxAvatar->addTorque(PxVec3(0, 20000, 0));
+
+           //pxCube->addForce(PxVec3(0, 0, -50000), PxForceMode::eFORCE); //force controls testing 
+       }
+       else if (key.keysym.sym == SDLK_l) {
+           //Vector look = avatar->getPosition();
+           //this->getCamera()->setCameraLookAtPoint(look);
+       }
    }
 }
-
 
 void GLViewInvisibleMaze::onKeyUp(const SDL_KeyboardEvent& key)
 {
@@ -287,12 +284,14 @@ void GLViewInvisibleMaze::placeWallSegment(float x, float y, bool rotate) {
     float thickness = 0.75;
 
     PxTransform t(PxVec3(x, 4.25f, y));
+    PxRigidStatic* pxWall = nullptr; 
+
     if (rotate) {
-        PxRigidStatic* pxWall = PxCreateStatic(*physics, t, PxBoxGeometry(width, 4.5, thickness), *genMaterial);
+        pxWall = PxCreateStatic(*physics, t, PxBoxGeometry(width, 4.5, thickness), *genMaterial);
         pxScene->addActor(*pxWall);
     }
     else {
-        PxRigidStatic* pxWall = PxCreateStatic(*physics, t, PxBoxGeometry(thickness, 4.5, width), *genMaterial);
+        pxWall = PxCreateStatic(*physics, t, PxBoxGeometry(thickness, 4.5, width), *genMaterial);
         pxScene->addActor(*pxWall);
     } 
 }
@@ -342,6 +341,17 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     std::vector< std::string > skyBoxImageNames; //vector to store texture paths
     skyBoxImageNames.push_back(ManagerEnvironmentConfiguration::getLMM() + "/images/tantolunden_skybox.png");
 
+    //set up physx scene event callback 
+    {
+        //define a sound effect 
+
+
+        MazeEventCallback* mazeCallback = new MazeEventCallback(); 
+        pxScene->setSimulationEventCallback(mazeCallback);
+
+    }
+
+
     //create a light 
     {
         //Create a light
@@ -390,6 +400,34 @@ void Aftr::GLViewInvisibleMaze::loadMap()
 
     }
 
+    //load the player avatar 
+    {
+        avatar = WO::New(dogPath, Vector(1, 1, 1), MESH_SHADING_TYPE::mstFLAT);
+        avatar->setLabel("avatar");
+        avatar->setPosition(Vector(-10, -4.25, 2)); //half height = 1.2
+        avatar->rotateAboutGlobalZ(3.14159); //rotate the avatar 180 degrees 
+
+        avatar->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
+        WO* a = avatar;
+        a->upon_async_model_loaded([a]()
+            {
+                ModelMeshSkin& avatarSkin = a->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);
+                avatarSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
+                avatarSkin.setDiffuse(aftrColor4f(0.8f, 0.8f, 0.8f, 0.5f)); //Diffuse color components (ie, matte shading color of this object)
+                avatarSkin.setSpecular(aftrColor4f(0.2f, 0.2f, 0.2f, 1.0f)); //Specular color component (ie, how "shiney" it is)
+                avatarSkin.setSpecularCoefficient(10); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
+
+            }
+        );
+        worldLst->push_back(avatar);
+
+        //create the physics actor at the same global pose as the avatar
+        PxTransform avatarPose = PxTransform(aftrToPxMat4(avatar->getPose()));
+        pxAvatar = PxCreateDynamic(*physics, avatarPose, PxBoxGeometry(2.1, 1.2, 0.7), *genMaterial, 10.0f);
+
+        pxScene->addActor(*pxAvatar);
+    }
+
     //Generate the maze and create a series of static rigid WO's to represent it 
     {
         int height = 12; 
@@ -427,33 +465,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
 
     }
 
-    //load the player avatar 
-    {
-        avatar = WO::New(dogPath, Vector(1,1,1), MESH_SHADING_TYPE::mstFLAT); 
-        avatar->setLabel("avatar");
-        avatar->setPosition(Vector(-10,-4.25, 2)); //half height = 1.2
-        avatar->rotateAboutGlobalZ(3.14159); //rotate the avatar 180 degrees 
-        
-        avatar->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE; 
-        WO* a = avatar; 
-        a->upon_async_model_loaded([a]()
-            {
-                ModelMeshSkin& avatarSkin = a->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0);
-                avatarSkin.setAmbient(aftrColor4f(0.4f, 0.4f, 0.4f, 1.0f)); //Color of object when it is not in any light
-                avatarSkin.setDiffuse(aftrColor4f(0.8f, 0.8f, 0.8f, 0.5f)); //Diffuse color components (ie, matte shading color of this object)
-                avatarSkin.setSpecular(aftrColor4f(0.2f, 0.2f, 0.2f, 1.0f)); //Specular color component (ie, how "shiney" it is)
-                avatarSkin.setSpecularCoefficient(10); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
-
-            }
-        );
-        worldLst->push_back(avatar);
-
-        //create the physics actor at the same global pose as the avatar
-        PxTransform avatarPose = PxTransform(aftrToPxMat4(avatar->getPose())); 
-        pxAvatar = PxCreateDynamic(*physics, avatarPose, PxBoxGeometry(2.1, 1.2, 0.7), *genMaterial, 10.0f); 
-
-        pxScene->addActor(*pxAvatar);
-    }
+    
 
     //load in a cube for collision testing 
     /* {
@@ -534,4 +546,24 @@ void GLViewInvisibleMaze::createInvisibleMazeWayPoints()
    WOWayPointSpherical* wayPt = WOWayPointSpherical::New( params, 3 );
    wayPt->setPosition( Vector( 50, 0, 3 ) );
    worldLst->push_back( wayPt );
+}
+
+//filter shader to define pair flags for collision detection 
+PxFilterFlags GLViewInvisibleMaze::contactReportFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0,
+    PxFilterObjectAttributes attributes1, PxFilterData filterData1,
+    PxPairFlags& pairFlags, const void* constantBlock, PxU32 constantBlockSize) 
+{
+    PX_UNUSED(attributes0); 
+    PX_UNUSED(attributes1); 
+    PX_UNUSED(filterData0); 
+    PX_UNUSED(filterData1); 
+    PX_UNUSED(constantBlockSize); 
+    PX_UNUSED(constantBlock); 
+
+    // all initial and persisting reports for everything, with per-point data
+    pairFlags = PxPairFlag::eSOLVE_CONTACT | PxPairFlag::eDETECT_DISCRETE_CONTACT 
+        | PxPairFlag::eNOTIFY_TOUCH_FOUND  
+        | PxPairFlag::eNOTIFY_CONTACT_POINTS; 
+
+    return PxFilterFlag::eDEFAULT;
 }

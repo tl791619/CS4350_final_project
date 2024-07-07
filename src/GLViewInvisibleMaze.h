@@ -6,6 +6,7 @@
 #include "NetMessengerClient.h"
 #include "PxPhysicsAPI.h" 
 #include "Maze.h"
+#include "MazeEventCallback.h"
 
 namespace Aftr
 {
@@ -37,6 +38,11 @@ namespace Aftr
        virtual void onMouseMove(const SDL_MouseMotionEvent& e);
        virtual void onKeyDown(const SDL_KeyboardEvent& key);
        virtual void onKeyUp(const SDL_KeyboardEvent& key); 
+
+       //function for filter shader pair flags 
+       static PxFilterFlags contactReportFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0,
+           PxFilterObjectAttributes attributes1, PxFilterData filterData1,
+           PxPairFlags& pairFlags, const void* constantBlock, PxU32 constantBlockSize); 
 
    protected:
        GLViewInvisibleMaze(const std::vector< std::string >& args);
