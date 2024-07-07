@@ -327,7 +327,7 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     soundEngine->setListenerPosition(vec3df(15,15,10), vec3df(1, 0, 0), vec3df(0,0,0), vec3df(0,0,1)); 
     
     //path to collision sound effect 
-    std::string soundPath(ManagerEnvironmentConfiguration::getLMM() + "/sounds/forest_wind_birds_cicadas.wav");
+    std::string soundPath(ManagerEnvironmentConfiguration::getLMM() + "/sounds/bottle_drop_3.wav");
     const char* soundEffect = soundPath.c_str(); //need to convert path from string to const char* 
 
     //paths to named WO's to potentially use later 
