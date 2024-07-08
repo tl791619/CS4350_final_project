@@ -111,28 +111,24 @@ GLViewInvisibleMaze::GLViewInvisibleMaze( const std::vector< std::string >& args
 
 void GLViewInvisibleMaze::onCreate()
 {
-   //GLViewInvisibleMaze::onCreate() is invoked after this module's LoadMap() is completed.
-   //At this point, all the managers are initialized. That is, the engine is fully initialized.
-   
-   //this->setActorChaseType(STANDARDEZNAV); //Default is STANDARDEZNAV mode
-   
+    //GLViewInvisibleMaze::onCreate() is invoked after this module's LoadMap() is completed.
+    //At this point, all the managers are initialized. That is, the engine is fully initialized.
 
-   //set the camera chase actor type 
-   //this->setActorChaseType(LOCKEDRELATIVE);
-   this->setActorChaseType(STANDARDEZNAV);
+    //this->setActorChaseType(STANDARDEZNAV); //Default is STANDARDEZNAV mode
 
-   //make sure the camera follows the avatar at a set relative offset 
-   //((CameraLockedRelative*)this->getCamera())->setOffset(Vector(6, 0, 4));
-   this->getCamera()->setPosition(Vector(-20,-4.25,10)); 
 
-   //this->getCamera()->setActorToWatch(avatar);
+    //set the camera chase actor type 
+    this->setActorChaseType(LOCKEDRELATIVE);
+    //this->setActorChaseType(STANDARDEZNAV);
 
-   this->getCamera()->setCameraLookDirection(avatar->getLookDirection()*-1);
+    //make sure the camera follows the avatar at a set relative offset 
+    ((CameraLockedRelative*)this->getCamera())->setOffset(Vector(0, 0, 10));
+    //this->getCamera()->setPosition(Vector(-20,-4.25,10)); 
 
-   //create a camera object that follows the avatar
-        //WO* LOZCam = ...
+    this->getCamera()->setActorToWatch(avatar);
 
-        //set the new camera as the GLView actor 
+    this->getCamera()->setCameraLookDirection(Vector(0.005, 0, -1));
+
 }
 
 
@@ -221,31 +217,28 @@ void GLViewInvisibleMaze::onKeyDown( const SDL_KeyboardEvent& key )
        if (key.keysym.sym == SDLK_w) {
            Vector force = avatar->getLookDirection() * -20000;
            pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE);
-
-           //pxCube->addForce(PxVec3(50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
+           
+           this->getCamera()->setCameraLookDirection(Vector(0.005, 0, -1));
        }
        //rotate counterclockwise 
        else if (key.keysym.sym == SDLK_a) {
            pxAvatar->addTorque(PxVec3(0, -20000, 0));
 
-           //pxCube->addForce(PxVec3(0, 0, 50000), PxForceMode::eFORCE); //force controls testing 
+           this->getCamera()->setCameraLookDirection(Vector(0.005, 0, -1));
        }
        //apply a force in opposite the avatar's look direction 
        else if (key.keysym.sym == SDLK_s) {
            Vector force = avatar->getLookDirection() * 20000;
            pxAvatar->addForce(PxVec3(force.x, force.z, force.y), PxForceMode::eFORCE);
 
-           //pxCube->addForce(PxVec3(-50000, 0, 0), PxForceMode::eFORCE); //force controls testing 
+           this->getCamera()->setCameraLookDirection(Vector(0.005, 0, -1));
+           
        }
        //rotate clockwise 
        else if (key.keysym.sym == SDLK_d) {
            pxAvatar->addTorque(PxVec3(0, 20000, 0));
 
-           //pxCube->addForce(PxVec3(0, 0, -50000), PxForceMode::eFORCE); //force controls testing 
-       }
-       else if (key.keysym.sym == SDLK_l) {
-           //Vector look = avatar->getPosition();
-           //this->getCamera()->setCameraLookAtPoint(look);
+           this->getCamera()->setCameraLookDirection(Vector(0.005, 0, -1));
        }
    }
 }
@@ -344,16 +337,13 @@ void Aftr::GLViewInvisibleMaze::loadMap()
     //set up physx scene event callback 
     {
         //define a sound effect source
-        ISoundSource* soundSource = soundEngine->addSoundSourceFromFile(soundEffect);
-        soundSource->setDefaultMinDistance(50.0); 
+        ISoundSource* soundSource = soundEngine->addSoundSourceFromFile(soundEffect); 
 
         //pass the maze event callback into the scene 
         MazeEventCallback* mazeCallback = new MazeEventCallback(soundEngine, soundSource); 
         pxScene->setSimulationEventCallback(mazeCallback);
 
-        //collisionSoundEffect->setSoundStopEventReceiver
     }
-
 
     //create a light 
     {
@@ -424,6 +414,8 @@ void Aftr::GLViewInvisibleMaze::loadMap()
         );
         worldLst->push_back(avatar);
 
+        //lockWRTparent_using_current_relative_pose();
+
         //create the physics actor at the same global pose as the avatar
         PxTransform avatarPose = PxTransform(aftrToPxMat4(avatar->getPose()));
         pxAvatar = PxCreateDynamic(*physics, avatarPose, PxBoxGeometry(2.1, 1.2, 0.7), *genMaterial, 10.0f);
@@ -467,8 +459,6 @@ void Aftr::GLViewInvisibleMaze::loadMap()
         }
 
     }
-
-    
 
     //load in a cube for collision testing 
     /* {
